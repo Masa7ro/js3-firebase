@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase_version9_RealtimeDB_chat</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <!-- コンテンツ表示画面 -->
+    <div>
+        <div>
+            名前：<input type="text" id="uname">
+        </div>
+        <div>
+            <textarea id="text" cols="10" rows="10"></textarea>
+            <button id="send"> 送信 </button>
+        </div>
+        <div id="output" style="overflow: auto;height: 200px;"></div>
+
+        <div class="comment" id="comment-1">
+            <p>コメント内容</p>
+            <button class="delete-button" data-comment-id="comment-1">削除</button>
+        </div>
+    </div>
+
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { getDatabase, ref, push, set, onChildAdded, remove, onChildRemoved }
+            from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "",
+            authDomain: "gsdev0610.firebaseapp.com",
+            projectId: "gsdev0610",
+            storageBucket: "gsdev0610.appspot.com",
+            messagingSenderId: "",
+            appId: ""
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app); //RealtimeDBに接続
+        const dbRef = ref(db, "chat"); //RealtimeDB内の"chat"を使う
+
+
+        //データ登録(Click)
+        $("#send").on("click", function () {
+            const msg = {
+                uname: $("#uname").val(),
+                text: $("#text").val()
+            }
+            const newPostRef = push(dbRef);
+            set(newPostRef, msg);
+        });
+
+        $("#text").on("keydown", function (e) {
+            console.log(e);
+        });
+
+
+        //データ登録(Enter)
+        //送信
+        $("#send").on('click', function () {
+            const name = $("#uname").val();
+            const text = $("#text").val();
+
+            alert(name + text)
+        });
+
+
+        //最初にデータ取得＆onSnapshotでリアルタイムにデータを取得
+        onChildAdded(dbRef, function (data) {
+            const msg = data.val();
+            const key = data.key;
+            let h = '<p>';
+            h += msg.uname;
+            h += '<br>';
+            h += msg.text;
+            h += '</p>';
+            $("#output").append(h);
+        });
+
+
+        // 全てのコメントをリセットする関数
+        function resetComments() {
+            // データベース参照を取得
+            var commentsRef = ref(db, '/comments');
+
+            // commentsノード以下のすべてのデータを削除
+            commentsRef.remove()
+                .then(function () {
+                    console.log('全てのコメントが削除されました');
+                })
+                .catch(function (error) {
+                    console.error('コメントの削除中にエラーが発生しました', error);
+                });
+        }
+
+        // コメントを削除する関数
+        function deleteComment(commentId) {
+            // データベース参照を取得
+            var commentRef = ref(db, '/comments/' + commentId);
+
+            // コメントを削除
+            remove(commentRef)
+                .then(function () {
+                    console.log('コメントが削除されました');
+                })
+                .catch(function (error) {
+                    console.error('コメントの削除中にエラーが発生しました', error);
+                });
+        }
+
+        // 削除ボタンのクリックイベントを処理
+        $(document).on("click", ".delete-button", function () {
+            var commentId = $(this).data("comment-id"); // データ属性からコメントIDを取得
+            deleteComment(commentId);
+            // その他の削除に関連する処理を追加する場合はここに記述
+        });
+
+
+
+    </script>
+</body>
+
+</html>
